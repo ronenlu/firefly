@@ -2,9 +2,7 @@ package engine
 
 import (
 	"context"
-	"encoding/json"
 	"firefly/internal/words"
-	"fmt"
 	"io"
 	"net/http"
 	"sort"
@@ -19,24 +17,23 @@ type Output struct {
 	Top []WordCount `json:"top_words"`
 }
 
-func RunSequential(ctx context.Context, urls []string, bank map[string]struct{}) error {
+func RunSequential(ctx context.Context, urls []string, bank words.Bank) (*Output, error) {
 	client := &http.Client{}
 	global := make(map[string]int)
 
-	// limit to first 10 URLs
-	for _, u := range urls[:10] {
+	for _, u := range urls {
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		resp, err := client.Do(req)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		body, err := io.ReadAll(resp.Body)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		local := words.CountValidWords(string(body), bank)
@@ -46,12 +43,7 @@ func RunSequential(ctx context.Context, urls []string, bank map[string]struct{})
 	// top 10 + pretty JSON
 	top := topN(global, 10)
 	out := Output{Top: top}
-	b, err := json.MarshalIndent(out, "", "  ")
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(b))
-	return nil
+	return &out, nil
 }
 
 func merge(global, local map[string]int) {

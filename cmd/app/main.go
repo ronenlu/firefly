@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"log"
 
 	"firefly/internal/data"
@@ -15,7 +17,14 @@ func main() {
 	urls := data.LoadEssayURLs()
 	bank := words.LoadWordBank()
 
-	if err := engine.RunSequential(ctx, urls, bank); err != nil {
+	result, err := engine.RunSequential(ctx, urls, bank)
+	if err != nil {
 		log.Fatal(err)
 	}
+
+	b, err := json.MarshalIndent(result, "", "  ")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(string(b))
 }
