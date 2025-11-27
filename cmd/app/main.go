@@ -1,16 +1,21 @@
 package main
 
 import (
-	"fmt"
+	"context"
+	"log"
 
 	"firefly/internal/data"
+	"firefly/internal/engine"
 	"firefly/internal/words"
 )
 
 func main() {
-	urls := data.LoadEssayURLs()
-	fmt.Printf("loaded %d urls\n", len(urls))
+	ctx := context.Background()
 
+	urls := data.LoadEssayURLs()
 	bank := words.LoadWordBank()
-	fmt.Printf("loaded %d words in bank\n", len(bank))
+
+	if err := engine.RunSequential(ctx, urls, bank); err != nil {
+		log.Fatal(err)
+	}
 }
