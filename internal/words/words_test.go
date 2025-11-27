@@ -1,7 +1,9 @@
 package words
 
 import (
+	"strings"
 	"testing"
+	"unicode"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -144,6 +146,96 @@ func TestCountValidWords(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := CountValidWords(tt.text, tt.bank)
 			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestLoadWordBank(t *testing.T) {
+	bank := LoadWordBank()
+
+	tests := []struct {
+		name      string
+		checkFunc func(t *testing.T, bank Bank)
+	}{
+		{
+			name: "bank is not nil and contains words",
+			checkFunc: func(t *testing.T, bank Bank) {
+				assert.NotNil(t, bank, "Bank should not be nil")
+				assert.Greater(t, len(bank), 0, "Bank should contain words")
+			},
+		},
+		{
+			name: "all words have minimum 3 characters",
+			checkFunc: func(t *testing.T, bank Bank) {
+				for word := range bank {
+					assert.GreaterOrEqual(t, len(word), 3, "Word '%s' should have at least 3 characters", word)
+				}
+			},
+		},
+		{
+			name: "all words contain only alphabetic characters",
+			checkFunc: func(t *testing.T, bank Bank) {
+				for word := range bank {
+					for _, r := range word {
+						assert.True(t, unicode.IsLetter(r), "Word '%s' should contain only letters, found '%c'", word, r)
+					}
+				}
+			},
+		},
+		{
+			name: "all words are lowercase",
+			checkFunc: func(t *testing.T, bank Bank) {
+				for word := range bank {
+					assert.Equal(t, strings.ToLower(word), word, "Word '%s' should be lowercase", word)
+				}
+			},
+		},
+		{
+			name: "contains common English words",
+			checkFunc: func(t *testing.T, bank Bank) {
+				commonWords := []string{"the", "and", "for", "are", "but", "not", "you", "all", "can", "her", "was", "one", "our", "out", "day"}
+				foundCount := 0
+				for _, word := range commonWords {
+					if _, exists := bank[word]; exists {
+						foundCount++
+					}
+				}
+				assert.Greater(t, foundCount, 0, "Expected at least some common words to be in the bank")
+			},
+		},
+		{
+			name: "excludes words with digits",
+			checkFunc: func(t *testing.T, bank Bank) {
+				for word := range bank {
+					for _, r := range word {
+						assert.False(t, unicode.IsDigit(r), "Bank should not contain words with digits, found '%s'", word)
+					}
+				}
+			},
+		},
+		{
+			name: "excludes words shorter than 3 characters",
+			checkFunc: func(t *testing.T, bank Bank) {
+				for word := range bank {
+					assert.GreaterOrEqual(t, len(word), 3, "Bank should not contain words shorter than 3 characters, found '%s'", word)
+				}
+			},
+		},
+		{
+			name: "excludes words with special characters",
+			checkFunc: func(t *testing.T, bank Bank) {
+				for word := range bank {
+					for _, r := range word {
+						assert.True(t, unicode.IsLetter(r), "Bank should not contain words with special characters, found '%s'", word)
+					}
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.checkFunc(t, bank)
 		})
 	}
 }

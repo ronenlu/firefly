@@ -9,6 +9,7 @@ import (
 //go:embed endg-urls.txt
 var urlsFile string
 
+// LoadEssayURLs loads and parses the embedded URLs file, returning a slice of trimmed, non-empty URLs.
 func LoadEssayURLs() []string {
 	scanner := bufio.NewScanner(strings.NewReader(urlsFile))
 	var urls []string

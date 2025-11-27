@@ -3,7 +3,6 @@ package words
 import (
 	"bufio"
 	_ "embed"
-	"regexp"
 	"strings"
 	"unicode"
 )
@@ -11,8 +10,11 @@ import (
 //go:embed word_bank.txt
 var wordBankFile string
 
+// Bank represents a set of valid words used for validation.
 type Bank map[string]struct{}
 
+// LoadWordBank loads and parses the embedded word bank file,
+// returning a Bank with normalized lowercase words.
 func LoadWordBank() Bank {
 	scanner := bufio.NewScanner(strings.NewReader(wordBankFile))
 	bank := make(map[string]struct{})
@@ -21,21 +23,43 @@ func LoadWordBank() Bank {
 		if w == "" {
 			continue
 		}
+		if !isValidWord(w) {
+			continue
+		}
 		bank[w] = struct{}{}
 	}
 	return bank
 }
 
-var nonLetters = regexp.MustCompile(`[^A-Za-z]+`)
+// splitWords splits a string into slices of consecutive Unicode letters.
+func splitWords(s string) []string {
+	var words []string
+	var current []rune
+	for _, r := range s {
+		if unicode.IsLetter(r) {
+			current = append(current, unicode.ToLower(r))
+		} else {
+			if len(current) > 0 {
+				words = append(words, string(current))
+				current = current[:0]
+			}
+		}
+	}
+	if len(current) > 0 {
+		words = append(words, string(current))
+	}
+	return words
+}
 
 // CountValidWords counts occurrences of valid words in the given text based on the provided word bank.
 func CountValidWords(text string, bank Bank) map[string]int {
-	text = strings.ToLower(text)
-	tokens := nonLetters.Split(text, -1)
-
+	tokens := splitWords(text)
 	counts := make(map[string]int)
 	for _, t := range tokens {
-		if !isValidWord(t, bank) {
+		if !isValidWord(t) {
+			continue
+		}
+		if _, exists := bank[t]; !exists {
 			continue
 		}
 		counts[t]++
@@ -43,7 +67,8 @@ func CountValidWords(text string, bank Bank) map[string]int {
 	return counts
 }
 
-func isValidWord(w string, bank Bank) bool {
+// // isValidWord returns true if the word is at least 3 characters long and contains only letters.
+func isValidWord(w string) bool {
 	if len(w) < 3 {
 		return false
 	}
@@ -51,9 +76,6 @@ func isValidWord(w string, bank Bank) bool {
 		if !unicode.IsLetter(r) {
 			return false
 		}
-	}
-	if _, ok := bank[w]; !ok {
-		return false
 	}
 	return true
 }
