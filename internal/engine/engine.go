@@ -2,12 +2,14 @@ package engine
 
 import (
 	"context"
+	"firefly/internal/data"
 	"firefly/internal/words"
 	"io"
 	"net/http"
 	"runtime"
 	"sort"
 	"sync"
+	"time"
 )
 
 type WordCount struct {
@@ -19,12 +21,9 @@ type Output struct {
 	Top []WordCount `json:"top_words"`
 }
 
+// RunConcurrent processes the given URLs concurrently to count word occurrences based on the provided word bank.
 func RunConcurrent(ctx context.Context, urls []string, bank words.Bank) (*Output, error) {
-	maxWorkers := 64
 	numWorkers := runtime.NumCPU() * 4
-	if numWorkers > maxWorkers {
-		numWorkers = maxWorkers
-	}
 
 	// Channels for work distribution and results
 	urlChan := make(chan string, len(urls))
@@ -39,7 +38,9 @@ func RunConcurrent(ctx context.Context, urls []string, bank words.Bank) (*Output
 	var wg sync.WaitGroup
 
 	// HTTP client shared across workers
-	client := &http.Client{}
+	client := &http.Client{Timeout: 30 * time.Second}
+
+	limiter := data.NewRateLimiter(100)
 
 	// Start worker pool
 	for i := 0; i < numWorkers; i++ {
@@ -53,6 +54,12 @@ func RunConcurrent(ctx context.Context, urls []string, bank words.Bank) (*Output
 					errChan <- ctx.Err()
 					return
 				default:
+				}
+
+				// Wait for rate limiter before making request
+				if err := limiter.Wait(ctx); err != nil {
+					errChan <- err
+					return
 				}
 
 				// Fetch URL
