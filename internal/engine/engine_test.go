@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRunSequential(t *testing.T) {
+func TestRunConcurrent(t *testing.T) {
 	// Create a simple word bank for testing
 	bank := words.Bank{
 		"hello":   struct{}{},
@@ -49,7 +49,7 @@ func TestRunSequential(t *testing.T) {
 		}
 
 		ctx := context.Background()
-		result, err := RunSequential(ctx, urls, bank)
+		result, err := RunConcurrent(ctx, urls, bank)
 
 		assert.NoError(t, err)
 		assert.NotNil(t, result)
@@ -72,7 +72,7 @@ func TestRunSequential(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel() // Cancel immediately
 
-		result, err := RunSequential(ctx, urls, bank)
+		result, err := RunConcurrent(ctx, urls, bank)
 
 		assert.Error(t, err)
 		assert.Nil(t, result)
@@ -82,7 +82,7 @@ func TestRunSequential(t *testing.T) {
 		urls := []string{"http://invalid-url-that-does-not-exist-12345.com"}
 
 		ctx := context.Background()
-		result, err := RunSequential(ctx, urls, bank)
+		result, err := RunConcurrent(ctx, urls, bank)
 
 		assert.Error(t, err)
 		assert.Nil(t, result)
@@ -100,7 +100,7 @@ func TestRunSequential(t *testing.T) {
 		urls := []string{server.URL}
 
 		ctx := context.Background()
-		result, err := RunSequential(ctx, urls, emptyBank)
+		result, err := RunConcurrent(ctx, urls, emptyBank)
 
 		assert.NoError(t, err)
 		assert.NotNil(t, result)
@@ -117,7 +117,7 @@ func TestRunSequential(t *testing.T) {
 		urls := []string{server.URL}
 
 		ctx := context.Background()
-		result, err := RunSequential(ctx, urls, bank)
+		result, err := RunConcurrent(ctx, urls, bank)
 
 		assert.NoError(t, err)
 		assert.NotNil(t, result)

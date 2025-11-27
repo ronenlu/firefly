@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"time"
 
 	"firefly/internal/data"
 	"firefly/internal/engine"
@@ -17,10 +18,13 @@ func main() {
 	urls := data.LoadEssayURLs()
 	bank := words.LoadWordBank()
 
-	result, err := engine.RunSequential(ctx, urls, bank)
+	start := time.Now()
+	result, err := engine.RunConcurrent(ctx, urls, bank)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	fmt.Println("time took for processing:", time.Since(start))
 
 	b, err := json.MarshalIndent(result, "", "  ")
 	if err != nil {
